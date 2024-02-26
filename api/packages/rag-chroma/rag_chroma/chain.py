@@ -4,6 +4,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from os import path
 
 # Example for document loading (from url), splitting, and creating vectostore
 
@@ -27,10 +28,18 @@ retriever = vectorstore.as_retriever()
 """
 
 # Download Dataset
-from datasets import load_dataset
+#from datasets import load_dataset
+import datasets
 from langchain.docstore.document import Document
 
-data = load_dataset('Cyb3rWard0g/ATTCKGroups',split='train')
+if path.isfile('/custom/intel.csv'):
+    data = datasets.Dataset.from_csv('/custom/intel.csv')
+else:
+    data = datasets.load_dataset('Cyb3rWard0g/ATTCKGroups',split='train')
+    data.to_csv('/custom/intel.csv')
+#test
+#data = load_dataset('xcelr8/test',split='train')
+
 chunks = data.to_list()
 documents = []
 for chunk in chunks:
@@ -40,11 +49,28 @@ for chunk in chunks:
 
 # Create Vector Database
 from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddings
+from transformers import AutoModel, AutoTokenizer
 
 # create the open-source embedding function
-embedding_function = SentenceTransformerEmbeddings(
-    model_name="all-mpnet-base-v2"
-)
+if path.isdir('/custom/all-mpnet-base-v2'):
+    embedding_function = SentenceTransformerEmbeddings(
+        model_name='/custom/all-mpnet-base-v2'
+    )
+else:
+    #model = SentenceTransformer("all-mpnet-base-v2")
+    tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-mpnet-base-v2')
+    model = AutoModel.from_pretrained('sentence-transformers/all-mpnet-base-v2')
+    #model.save('/custom/all-mpnet-base-v2-local')
+    model.save_pretrained('/custom/all-mpnet-base-v2')
+    tokenizer.save_pretrained('/custom/all-mpnet-base-v2')
+    embedding_function = SentenceTransformerEmbeddings(
+        model_name='/custom/all-mpnet-base-v2'
+    )
+
+#embedding_function = SentenceTransformerEmbeddings(
+#    model_name="all-mpnet-base-v2"
+#)
+
 vectorstore = Chroma.from_documents(
     documents,
     embedding_function,

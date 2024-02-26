@@ -2,6 +2,8 @@ FROM python:3.11-slim
 
 RUN pip install poetry==1.6.1
 
+RUN pip install transformers
+
 RUN poetry config virtualenvs.create false
 
 WORKDIR /code
